@@ -3,6 +3,13 @@
 All notable changes to HandyKopie are documented here.
 Format based on "Keep a Changelog". Dates in YYYY-MM-DD.
 
+## [2.1.1] - 2026-09-11
+### Fixed
+- Critical bugfix: the duplicate prompt (Ja/Nein dialog) was missing its
+  worker function Ask-Dups - copies with duplicates in standard mode failed.
+  Implemented with cancel-aware waiting; "No" answers are honored
+  ([void] event reset prevents the overwrite flag from being clobbered).
+
 ## [2.1.0] - 2026-09-11
 ### Added
 - EXIF photo sorting: after each copy run, copied JPGs are additionally filed

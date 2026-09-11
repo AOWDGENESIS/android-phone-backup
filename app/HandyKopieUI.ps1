@@ -140,6 +140,21 @@ $workerScript = {
         }
     }
 
+    function Ask-Dups([int]$n, [long]$bytes) {
+        $sync.Question = $n.ToString('N0') + ' doppelte Datei(en) im Ziel gefunden (' + (FmtSize $bytes) + ').' + "`r`n`r`n" +
+                         'Ja  = vorhandene Dateien ueberschreiben' + "`r`n" +
+                         'Nein = Duplikate ueberspringen'
+        $sync.OverwriteAnswer = $false
+        $sync.Answered = $false
+        $sync.Phase = 'Ask'
+        [void]$sync.QuestionEvent.Reset()
+        while (-not $sync.QuestionEvent.WaitOne(250)) {
+            if ($sync.Cancel) { $sync.Question = $null; return $false }
+        }
+        $sync.Question = $null
+        [bool]$sync.OverwriteAnswer
+    }
+
     function Get-ExifDate([string]$path, [datetime]$fallback) {
         $img = $null
         try {
