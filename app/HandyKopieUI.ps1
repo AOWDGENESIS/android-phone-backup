@@ -97,6 +97,12 @@ $workerScript = {
         elseif ($b -ge 1KB) { '{0:N0} KB' -f ($b / 1KB) }
         else { "$b B" }
     }
+    function Sanitize-Seg([string]$s) {
+        $x = [System.Text.RegularExpressions.Regex]::Replace($s, '[\\/:*?"<>|]', '_')
+        $x = $x.TrimEnd(' ', '.')
+        if ($x -eq '') { $x = '_' }
+        $x
+    }
     function IsUnderHole([string]$relL, $holes) {
         foreach ($h in $holes) { if ($relL -eq $h -or $relL.StartsWith($h + '\')) { return $true } }
         return $false
@@ -119,7 +125,8 @@ $workerScript = {
                 if (-not $extFilter.ContainsKey($ext)) { continue }
             }
             if ($item.IsFolder) {
-                EnumFolder $item.GetFolder $crel $t
+                $gf = $item.GetFolder
+                if ($gf) { EnumFolder $gf $crel $t }
             } else {
                 $sz = [long]0
                 try { $sz = [long]$item.Size } catch { }
@@ -203,9 +210,11 @@ $workerScript = {
         $dev   = $pc.Items() | Where-Object { $_.IsFolder -and $_.Name -like "*$($job.PhoneMatch)*" } | Select-Object -First 1
         if (-not $dev) { throw 'Telefon nicht gefunden. USB-Verbindung und USB-Modus (Dateiübertragung) prüfen.' }
         $df  = $dev.GetFolder
+        if (-not $df) { throw 'Telefon-Speicher nicht lesbar. Handy entsperrt und USB-Modus "Dateiuebertragung" aktiv?' }
         $vol = $df.Items() | Where-Object { $_.IsFolder -and $_.Name -eq $job.VolumeName } | Select-Object -First 1
         if (-not $vol) { throw "Speicherbereich '$($job.VolumeName)' nicht gefunden." }
         $volRoot = $vol.GetFolder
+        if (-not $volRoot) { throw "Speicherbereich '$($job.VolumeName)' nicht lesbar." }
 
         # ---- uebergeordneter Handy-Ordner im Ziel ----
         $phoneDir = Sanitize-Seg $job.PhoneName
@@ -352,14 +361,17 @@ $workerScript = {
                 $n = $parent.ParseName($s.Path[$i])
                 if (-not $n -or -not $n.IsFolder) { WLog ("Ordner '" + $s.Path[$i] + "' nicht gefunden - Auswahl übersprungen."); $ok = $false; break }
                 $parent = $n.GetFolder
+                if (-not $parent) { WLog ("Ordner '" + $s.Path[$i] + "' nicht lesbar - Auswahl uebersprungen."); $ok = $false; break }
             }
             if (-not $ok) { continue }
             $topItem = $parent.ParseName($s.Path[$s.Path.Count - 1])
             if (-not $topItem -or -not $topItem.IsFolder) { WLog ("Auswahl '" + $s.Name + "' nicht gefunden - übersprungen."); continue }
+            $tFolder = $topItem.GetFolder
+            if (-not $tFolder) { WLog ("Auswahl '" + $s.Name + "' nicht lesbar - übersprungen."); continue }
             $t = [pscustomobject]@{
                 Name     = $s.Name
                 Item     = $topItem
-                Folder   = $topItem.GetFolder
+                Folder   = $tFolder
                 Holes    = $s.Holes
                 Files    = New-Object System.Collections.Generic.List[object]
                 Bytes    = [long]0
@@ -403,12 +415,6 @@ $workerScript = {
         $sync.ErrorFile = $errFile
         $errCount = 0
         [System.IO.File]::WriteAllText($errFile, ('HandyKopie Fehlerprotokoll vom ' + (Get-Date).ToString() + "`r`n" + 'Ziel: ' + $job.Dest + "`r`n`r`n"), [System.Text.Encoding]::UTF8)
-        function Sanitize-Seg([string]$s) {
-            $x = [System.Text.RegularExpressions.Regex]::Replace($s, '[\\/:*?"<>|]', '_')
-            $x = $x.TrimEnd(' ', '.')
-            if ($x -eq '') { $x = '_' }
-            $x
-        }
         foreach ($t in $tops) {
             if ($sync.Cancel) { break }
             $sync.CurrentFolder = $t.Name
@@ -500,7 +506,8 @@ $searchScript = {
             $crel = if ($rel) { $rel + '\' + $name } else { $name }
             if ($item.IsFolder) {
                 if ($hideSys -and ($fs.SysNames -contains $name.ToLower())) { continue }
-                try { SScan $item.GetFolder $crel $map $exts $fs $hideSys } catch { }
+                $gf = $item.GetFolder
+                if ($gf) { try { SScan $gf $crel $map $exts $fs $hideSys } catch { } }
             } else {
                 $di = $name.LastIndexOf('.')
                 $ext = if ($di -ge 0) { $name.Substring($di + 1).ToLower() } else { '' }
@@ -526,8 +533,10 @@ $searchScript = {
         if (-not $dev) { throw 'Telefon nicht gefunden.' }
         $vol = $dev.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -eq $job.VolumeName } | Select-Object -First 1
         if (-not $vol) { throw 'Speicherbereich nicht gefunden.' }
+        $vr = $vol.GetFolder
+        if (-not $vr) { throw 'Speicherbereich nicht lesbar. Handy ggf. entsperren und erneut versuchen.' }
         $map = @{}
-        SScan $vol.GetFolder '' $map $job.Exts $fs $job.HideSys
+        SScan $vr '' $map $job.Exts $fs $job.HideSys
         $fs.Map = $map
         $fs.Folders = $map.Count
         $fs.Phase = 'Done'
@@ -584,6 +593,7 @@ $fileCopyScript = {
         $vol = $dev.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -eq $job.VolumeName } | Select-Object -First 1
         if (-not $vol) { throw 'Speicherbereich nicht gefunden.' }
         $volRoot = $vol.GetFolder
+        if (-not $volRoot) { throw 'Speicherbereich nicht lesbar.' }
 
         # Dateien aufloesen
         $files = New-Object System.Collections.Generic.List[object]
@@ -596,6 +606,7 @@ $fileCopyScript = {
                 $n = $parent.ParseName($segs[$i])
                 if (-not $n -or -not $n.IsFolder) { $ok = $false; break }
                 $parent = $n.GetFolder
+                if (-not $parent) { $ok = $false; break }
             }
             $fname = $segs[$segs.Count - 1]
             $it = $null
@@ -757,10 +768,12 @@ public static class ThumbHelper {
         $vol = $dev.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -eq $job.VolumeName } | Select-Object -First 1
         if (-not $vol) { $tsync.Phase = 'Done'; return }
         $f = $vol.GetFolder
+        if (-not $f) { $tsync.Phase = 'Done'; return }
         foreach ($seg in $job.Base) {
             $n = $f.ParseName($seg)
             if (-not $n -or -not $n.IsFolder) { $tsync.Phase = 'Done'; return }
             $f = $n.GetFolder
+            if (-not $f) { $tsync.Phase = 'Done'; return }
         }
         foreach ($nm in $job.Names) {
             try {
@@ -1193,10 +1206,12 @@ function Navigate-To($pathArr) {
     if ($script:volIndex -lt 0) { throw 'Kein Speicher ausgewählt.' }
     $vol = $script:volumes[$script:volIndex]
     $f = $vol.Item.GetFolder
+    if (-not $f) { throw 'Speicherbereich nicht lesbar. Handy entsperren und "Neu laden" klicken.' }
     foreach ($seg in $pathArr) {
         $n = $f.ParseName($seg)
         if (-not $n -or -not $n.IsFolder) { throw "Ordner '$seg' nicht (mehr) vorhanden." }
         $f = $n.GetFolder
+        if (-not $f) { throw "Ordner '$seg' nicht lesbar." }
     }
     $f
 }
@@ -1391,6 +1406,7 @@ function Refresh-All([bool]$silent = $false) {
         return
     }
     $df = $dev.GetFolder
+    if (-not $df) { throw 'Telefon-Speicher nicht lesbar. Handy entsperrt?' }
     $vols = @()
     foreach ($v in $df.Items()) {
         if (-not $v.IsFolder) { continue }
@@ -1543,7 +1559,7 @@ $cleanScanScript = {
     function SizeOf($folder) {
         $total = [long]0; $cnt = 0
         foreach ($it in $folder.Items()) {
-            if ($it.IsFolder) { $r = SizeOf $it.GetFolder; $total = $total + $r[0]; $cnt = $cnt + $r[1] }
+            if ($it.IsFolder) { $g = $it.GetFolder; if ($g) { $r = SizeOf $g; $total = $total + $r[0]; $cnt = $cnt + $r[1] } }
             else { try { $total = $total + [long]$it.Size } catch { }; $cnt++ }
         }
         ,@($total, $cnt)
@@ -1558,6 +1574,7 @@ $cleanScanScript = {
         $vol = $dev.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -eq $job.VolumeName } | Select-Object -First 1
         if (-not $vol) { throw 'Speicherbereich nicht gefunden.' }
         $root = $vol.GetFolder
+        if (-not $root) { throw 'Speicherbereich nicht lesbar.' }
 
         $cats = New-Object System.Collections.Generic.List[object]
 
@@ -1845,7 +1862,7 @@ $appListScript = {
         }
         $async.Pkgs = $pkgs
         $async.Phase = 'Loaded'
-        ALog ($pkgs.Count + ' Dritt-Apps gefunden.')
+        ALog ("$($pkgs.Count) Dritt-Apps gefunden.")
     } catch {
         $async.Error = $_.Exception.Message
         $async.Phase = 'Error'

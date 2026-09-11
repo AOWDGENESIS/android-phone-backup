@@ -3,6 +3,18 @@
 All notable changes to HandyKopie are documented here.
 Format based on "Keep a Changelog". Dates in YYYY-MM-DD.
 
+## [2.1.2] - 2026-09-11
+### Fixed
+- Copy worker crashed with "Sanitize-Seg not recognized": the helper was
+  defined after its first use (PowerShell defines functions at runtime, in
+  order). Definition moved to the top of the worker.
+- App manager crashed with an Int32 conversion error: `count + ' text'`
+  forces PowerShell to parse the text as a number. Now string-interpolated.
+- Robustness against flaky MTP connections: NULL guards on every
+  GetFolder/ParseName navigation step in copy, search, single-file copy,
+  thumbnails, cleanup and browser - instead of cryptic NULL errors the UI
+  now shows clear hints (e.g. "unlock phone").
+
 ## [2.1.1] - 2026-09-11
 ### Fixed
 - Critical bugfix: the duplicate prompt (Ja/Nein dialog) was missing its
