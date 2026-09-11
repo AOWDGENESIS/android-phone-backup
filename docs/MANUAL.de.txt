@@ -154,6 +154,14 @@ INKREMENTELL:
   nur noch Neues/Geaendertes.
 - Ohne Haekchen fragt das Programm bei Duplikaten wie gewohnt Ja/Nein.
 
+PHOTOS NACH AUFNAHMEDATUM SORTIERT
+- Haekchen 'Fotos nach Aufnahmedatum sortieren': Nach der Kopie werden alle
+  kopierten JPGs zusaetzlich in <Handy-Ordner>\Fotos_sortiert\JJJJ-MM\
+  kopiert - massgeblich ist das ECHTE Aufnahmedatum (EXIF), nicht das
+  Dateidatum.
+- Die Backup-Struktur bleibt unveraendert; die Sortierung ist eine
+  Zusatzansicht. Bereits dort vorhandene Dateien werden nicht erneut kopiert.
+
 HANDY-ORDNER IM ZIEL
 Alle Kopien landen in einem uebergeordneten Ordner mit dem Handy-Namen,
 z.B.  C:\Users\aowdg\Desktop\Neuer Ordner\Redmi 12 5G\...

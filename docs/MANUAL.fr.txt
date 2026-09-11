@@ -152,6 +152,14 @@ INCRÉMENTAL :
   passage ne transfère que le neuf/modifié.
 - Sans la case, le programme pose la question oui/non comme d'habitude.
 
+PHOTOS TRIEES PAR DATE DE PRISE DE VUE
+- Cochez « Trier les photos par date de prise de vue » : après la copie, tous
+  les JPG copiés sont en plus COPIÉS dans <dossier téléphone>\Fotos_sortiert\
+  AAAA-MM\ - selon la VRAIE date de prise de vue (EXIF), pas la date du
+  fichier.
+- La structure de sauvegarde reste inchangée ; le tri est une vue
+  supplémentaire. Les fichiers déjà présents n'y sont pas recopiés.
+
 DOSSIER DU TÉLÉPHONE À LA DESTINATION
 Toutes les copies sont rangées dans un dossier parent au nom du téléphone,
 p. ex.  C:\Users\<vous>\Desktop\Nouveau dossier\Redmi 12 5G\...

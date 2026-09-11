@@ -140,6 +140,13 @@ INCREMENTAL:
   files.
 - Without the tick, the program asks yes/no for duplicates as usual.
 
+PHOTOS SORTED BY DATE TAKEN
+- Tick 'Sort photos by capture date': after the copy run, all copied JPGs
+  are additionally COPIED to <phone folder>\Fotos_sortiert\YYYY-MM\ -
+  based on the REAL capture date (EXIF), not the file date.
+- The backup structure stays untouched; sorting is an extra view.
+  Files already present there are not copied again.
+
 PHONE FOLDER AT THE DESTINATION
 All copies are stored in a parent folder named after the phone,
 e.g.  C:\Users\<you>\Desktop\New folder\Redmi 12 5G\...

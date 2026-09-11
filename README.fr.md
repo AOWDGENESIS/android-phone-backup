@@ -48,6 +48,7 @@ publicité – tout reste sur votre PC.
 - **Gestion des applications** : liste les applications tierces installées et
   les désinstalle *proprement* (application + dossiers résiduels
   `Android/data` / `Android/obb`).
+- **Photos triées par date de prise de vue** : les JPG sont aussi rangés sous `Fotos_sortiert\YYYY-MM` (date EXIF).
 - **Progression en direct** (pourcentage, compteurs, fichier en cours) et
   bouton Annuler fonctionnel.
 

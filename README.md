@@ -40,6 +40,7 @@ app uninstaller. No installation, no cloud, no ads – everything stays on your 
   outdated Android update leftovers – each shown with size **and file count**.
 - **App manager**: list installed third-party apps and uninstall them
   *cleanly* (app + leftover `Android/data` / `Android/obb` folders).
+- **Photos sorted by capture date**: JPGs are additionally filed under `Fotos_sortiert\YYYY-MM` (EXIF date).
 - **Live progress** (percent, file counters, current file) and working
   cancel button.
 

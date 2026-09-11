@@ -3,6 +3,12 @@
 All notable changes to HandyKopie are documented here.
 Format based on "Keep a Changelog". Dates in YYYY-MM-DD.
 
+## [2.1.0] - 2026-09-11
+### Added
+- EXIF photo sorting: after each copy run, copied JPGs are additionally filed
+  by their real capture date into `Fotos_sortiert\YYYY-MM\` (checkbox
+  "Sort photos by capture date"; incremental - existing files are skipped).
+
 ## [2.0.0] - 2026-09-11
 ### Added
 - Turbo mode: copy via `adb pull` (much faster than MTP) for internal storage,

@@ -47,6 +47,7 @@ alle Daten bleiben auf Ihrem PC.
   Dateianzahl** angezeigt.
 - **App-Verwaltung**: installierte Dritt-Apps auflisten und *sauber*
   deinstallieren (App + Restordner `Android/data` / `Android/obb`).
+- **Fotos nach Aufnahmedatum sortiert**: JPGs werden zusätzlich unter `Fotos_sortiert\YYYY-MM` abgelegt (EXIF-Datum).
 - **Live-Fortschritt** (Prozent, Dateizähler, aktuelle Datei) und
   funktionierender Abbrechen-Knopf.
 

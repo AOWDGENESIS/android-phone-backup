@@ -45,6 +45,7 @@ $sync = [hashtable]::Synchronized(@{
     ErrorMsg      = ''
     ErrorFile     = ''
     ErrorCount    = 0
+    SortCount     = 0
 })
 $sync.QuestionEvent = New-Object System.Threading.ManualResetEvent($false)
 
@@ -137,6 +138,47 @@ $workerScript = {
                 $sync.ScanStatus = $t.Name + '\' + $crel
             }
         }
+    }
+
+    function Get-ExifDate([string]$path, [datetime]$fallback) {
+        $img = $null
+        try {
+            $img = [System.Drawing.Image]::FromFile($path)
+            foreach ($tag in @(0x9003, 0x0132)) {
+                try {
+                    $pi = $img.GetPropertyItem($tag)
+                    $s = ([System.Text.Encoding]::ASCII.GetString($pi.Value)).Trim([char]0).Trim()
+                    return [datetime]::ParseExact($s, 'yyyy:MM:dd HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
+                } catch { }
+            }
+            return $fallback
+        } catch {
+            return $fallback
+        } finally {
+            if ($img) { $img.Dispose() }
+        }
+    }
+
+    function Sort-Photos([string]$baseDir) {
+        Add-Type -AssemblyName System.Drawing
+        $sortedRoot = Join-Path $baseDir 'Fotos_sortiert'
+        $count = 0
+        $all = Get-ChildItem -LiteralPath $baseDir -Recurse -File -ErrorAction SilentlyContinue |
+               Where-Object { ($_.Extension -in '.jpg', '.jpeg') -and ($_.FullName -notlike (Join-Path $sortedRoot '*')) }
+        foreach ($fi in $all) {
+            if ($sync.Cancel) { break }
+            $dt = Get-ExifDate $fi.FullName $fi.LastWriteTime
+            $dir = Join-Path $sortedRoot ($dt.ToString('yyyy-MM'))
+            $dst = Join-Path $dir $fi.Name
+            if (Test-Path -LiteralPath $dst) { continue }
+            try {
+                [void][System.IO.Directory]::CreateDirectory($dir)
+                Copy-Item -LiteralPath $fi.FullName -Destination $dst -Force -ErrorAction Stop
+                $count++
+                $sync.CurrentFile = 'Sortiere: ' + $fi.Name
+            } catch { }
+        }
+        $count
     }
 
     try {
@@ -275,6 +317,12 @@ $workerScript = {
                 WLog ('Fertig: ' + $t.Name)
             }
             Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+            if (-not $sync.Cancel -and $job.ExifSort) {
+                $sync.Phase = 'Sort'
+                WLog 'Sortiere Fotos nach Aufnahmedatum (Jahr/Monat)...'
+                $sync.SortCount = Sort-Photos $base
+                WLog ('Fotos sortiert: ' + $sync.SortCount + ' neue Datei(en) nach Fotos_sortiert\Jahr-Monat.')
+            }
             if ($sync.Cancel) { $sync.Phase = 'Canceled'; WLog 'Kopiervorgang abgebrochen.' }
             else { $sync.Phase = 'Done' }
         } else {
@@ -390,6 +438,12 @@ $workerScript = {
         }
         $sync.ErrorCount = $errCount
         if ($errCount -gt 0) { WLog ($errCount + ' Fehler - Protokoll: ' + $errFile) }
+        if (-not $sync.Cancel -and $job.ExifSort) {
+            $sync.Phase = 'Sort'
+            WLog 'Sortiere Fotos nach Aufnahmedatum (Jahr/Monat)...'
+            $sync.SortCount = Sort-Photos $base
+            WLog ('Fotos sortiert: ' + $sync.SortCount + ' neue Datei(en) nach Fotos_sortiert\Jahr-Monat.')
+        }
         if ($sync.Cancel) { $sync.Phase = 'Canceled'; WLog 'Kopiervorgang abgebrochen.' }
         else              { $sync.Phase = 'Done' }
         } # Ende MTP-Zweig
@@ -777,7 +831,7 @@ $leftP = New-Object Windows.Forms.TableLayoutPanel
 $leftP.Dock = 'Fill'; $leftP.ColumnCount = 1; $leftP.RowCount = 7
 [void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute, 96)))
 [void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute, 40)))
-[void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute, 52)))
+[void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute, 70)))
 [void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::AutoSize)))
 [void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent, 100)))
 [void]$leftP.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute, 172)))
@@ -831,8 +885,13 @@ $chkIncr = New-Object Windows.Forms.CheckBox
 $chkIncr.Text = 'Inkrementell (nur Neues + Aenderungen)'
 $chkIncr.Location = New-Object Drawing.Point(10, 32)
 $chkIncr.Size = New-Object Drawing.Size(300, 16)
+$chkExif = New-Object Windows.Forms.CheckBox
+$chkExif.Text = 'Fotos nach Aufnahmedatum sortieren'
+$chkExif.Location = New-Object Drawing.Point(10, 48)
+$chkExif.Size = New-Object Drawing.Size(300, 16)
 $grpCopyOpts.Controls.Add($chkTurbo)
 $grpCopyOpts.Controls.Add($chkIncr)
+$grpCopyOpts.Controls.Add($chkExif)
 $leftP.Controls.Add($grpCopyOpts, 0, 2)
 $leftP.Controls.Add($lblHint, 0, 3)
 
@@ -2237,6 +2296,7 @@ function Start-CopyJob($sel, [string]$dest, [bool]$wholeFolder = $false) {
         FilterExts  = $filterExts
         Turbo       = ($chkTurbo.Checked -and $chkTurbo.Enabled)
         Incremental = $chkIncr.Checked
+        ExifSort    = $chkExif.Checked
         AdbPath     = $script:adbPath
     }
 
@@ -2335,6 +2395,9 @@ $timer.Add_Tick({
             'Ask' {
                 $lblStatus.Text = 'Frage zu doppelten Dateien wird angezeigt...'
             }
+            'Sort' {
+                $lblStatus.Text = 'Sortiere Fotos nach Aufnahmedatum... ' + $sync.CurrentFile
+            }
             'Copy' {
                 $pbOverall.Style = 'Continuous'
                 $lblStatus.Text = 'Kopiere: ' + $sync.CurrentFolder
@@ -2375,6 +2438,9 @@ $timer.Add_Tick({
                        'Übersprungen: ' + $sync.SkippedFiles.ToString('N0') + ' doppelte Dateien'
                 if ($sync.ErrorCount -gt 0) {
                     $msg += "`r`n" + 'Fehler:       ' + $sync.ErrorCount.ToString('N0') + ' (Protokoll wird geoeffnet)'
+                }
+                if ($sync.SortCount -gt 0) {
+                    $msg += "`r`n" + 'Fotos sortiert (Aufnahmedatum): ' + $sync.SortCount.ToString('N0') + ' -> Fotos_sortiert\Jahr-Monat'
                 }
                 $zielTxt = $txtDest.Text.Trim()
                 if ($script:phoneName) { $zielTxt = Join-Path $zielTxt (Sanitize-Seg $script:phoneName) }
