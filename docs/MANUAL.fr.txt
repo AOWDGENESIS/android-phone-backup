@@ -1,0 +1,167 @@
+MANUEL - HandyKopie (outil de copie de téléphone Android avec interface)
+========================================================================
+
+FICHIERS
+- Start_HandyKopie_UI.bat   -> double-cliquer pour lancer le programme (GUI)
+- HandyKopieUI.ps1          -> le script proprement dit (interface)
+- platform-tools\           -> adb.exe + DLLs d'aide INCLUS
+  (Android SDK Platform-Tools, (c) Google ; aucune installation séparée)
+  IMPORTANT : toujours utiliser ce .bat (PAS un ancien
+  "Start_HandyKopie.bat") !
+  IMPORTANT : tout extraire dans UN SEUL dossier, sinon adb manque.
+
+PRÉPARATION
+1. Extraire tous les fichiers dans UN dossier.
+2. Brancher le téléphone au PC avec le câble USB.
+3. DÉVERROUILLER le téléphone.
+4. Sur le téléphone, dans la barre de notifications :
+   toucher « Chargement via USB » -> choisir « Transfert de fichier / MTP ».
+
+DÉMARRAGE
+Double-cliquer sur :  Start_HandyKopie_UI.bat
+
+UTILISATION
+1. En haut à gauche, choisir le stockage :
+   - Mémoire interne  ou  - Carte SD / stockage externe
+   (les stockages absents sont grisés ; cliquer « Recharger » après avoir
+   rebranché le téléphone)
+2. Dans l'arborescence de gauche, COCHER tous les dossiers à copier
+   (p. ex. DCIM, Download, Pictures, Documents).
+   - Une case cochée copie le dossier avec tous ses sous-dossiers.
+   - Décocher un sous-dossier = ce sous-dossier est exclu.
+   - Les dossiers se développent. Un clic sur un dossier dans l'arbre de
+     GAUCHE affiche immédiatement son contenu à droite (noms de fichiers
+     avec taille/date). Le double-clic à droite fonctionne aussi ;
+     « Haut » remonte d'un niveau.
+3. En bas, saisir le DOSSIER DE DESTINATION ou le choisir avec
+   « Parcourir... ».
+4. Cliquer « Démarrer la copie ».
+
+DÉROULEMENT
+- Phase 1 : le dossier de destination et les dossiers du téléphone sont
+  analysés (nombre de fichiers et taille affichés en direct).
+- Phase 2 : si des DOUBLONS sont trouvés (même nom + même taille déjà
+  présents à la destination), une question apparaît :
+      OUI  = copier quand même (les fichiers existants sont écrasés)
+      NON  = les doublons sont ignorés
+  (les fichiers de même nom mais de taille DIFFÉRENTE sont toujours
+  écrasés.)
+- Phase 3 : copie avec barre de progression en direct (pourcentage, volume
+  copié, compteur de fichiers, fichier en cours).
+- À la fin, un résumé s'affiche (copiés / ignorés).
+
+FILTRE DE FICHIERS (EN BAS À GAUCHE)
+- Par défaut : « Tous les types de fichiers » (tout est copié).
+- Ou : cocher seulement certains groupes, p. ex. Images (jpg/png/heic),
+  Vidéos, Audio, Documents (pdf/docx), APK, Archives.
+- Extensions personnelles dans le petit champ (séparées par des virgules,
+  p. ex. « apk, pdf »).
+
+TOLÉRANCE AUX ERREURS PENDANT LA COPIE
+- Le programme copie désormais fichier par fichier, SANS fenêtres Windows
+  bloquantes.
+- Si un fichier échoue (nom invalide, fichier verrouillé...), l'erreur est
+  écrite IMMÉDIATEMENT dans un fichier texte et le programme continue avec
+  le fichier SUIVANT. L'opération n'est PAS interrompue.
+- Journal : %TEMP%\HandyKopie_Fehler_<date>.txt - en cas d'erreur, il est
+  ouvert automatiquement dans le Bloc-notes à la fin ; le chemin figure
+  aussi dans le journal.
+
+ANNULER
+« Annuler » arrête l'opération après le fichier en cours.
+
+REMARQUES / CONSEILS
+- Laisser le téléphone déverrouillé pendant la copie (écran allumé), sinon
+  la connexion MTP peut se couper.
+- Si le programme est très lent au développement : les grands dossiers
+  (p. ex. images WhatsApp) peuvent contenir des dizaines de milliers de
+  fichiers.
+
+NETTOYAGE : CACHES & FICHIERS INUTILES (contre les blocages)
+1. Dans la fenêtre principale, cliquer à gauche sur
+   « Nettoyer caches & fichiers inutiles ».
+2. « Scanner » -> les catégories s'affichent avec leur taille :
+   - Miniatures (DCIM/.thumbnails etc.)
+   - Caches d'applications (Android/data/*/cache)
+   - Dossiers temporaires/restes à la racine (.cache, tmp, temp, ...)
+   - Mises à jour Android obsolètes (restes de mises à jour système :
+     *.ota, *.bin, update*.zip dans racine/Download/MIUI/.ota) - si présents
+3. Cocher les catégories puis « Supprimer la sélection » -> répondre Oui à
+   la question de sécurité.
+   Vos fichiers personnels (photos, documents, musique, conversations
+   WhatsApp) ne sont JAMAIS touchés. Les miniatures/caches sont recréés
+   automatiquement si besoin.
+   Remarque : à partir d'Android 11, Android masque certains dossiers de
+   cache pour MTP (0 MB affiché). Pour cela existe le bouton « Vider le
+   cache des applis via adb » : le programme trouve automatiquement un
+   adb.exe (dossier du script, PATH ou chemins courants) et exécute
+   « adb shell pm trim-caches 8G » - le nettoyage profond sûr, côté
+   système, de tous les caches d'applications.
+   Prérequis : débogage USB activé sur le téléphone.
+   adb.exe est déjà fourni dans le dossier platform-tools - aucune
+   installation supplémentaire ! Les catégories affichent désormais, outre
+   la taille, le NOMBRE DE FICHIERS (0 = vide ou masqué par Android).
+
+GÉRER LES APPLICATIONS / DÉSINSTALLATION PROPRE
+1. Cliquer « Gérer les applications » dans la barre d'outils en haut.
+2. « Charger la liste » -> affiche toutes les applications tierces
+   installées par l'utilisateur (les applications système ne sont
+   volontairement pas montrées).
+3. Sélectionner la/les application(s) puis « Désinstaller proprement la
+   sélection » :
+   - supprime l'application via adb (pm uninstall)
+   - supprime ensuite les dossiers résiduels Android/data/<paquet> et
+     Android/obb/<paquet> du téléphone -> vraiment PROPRE, aucun déchet
+4. Prérequis : débogage USB actif + PC approuvé (à confirmer une fois sur
+   le téléphone). adb est déjà fourni dans le dossier platform-tools.
+
+FILTRE AVEC RECHERCHE (à droite) + TÉLÉCHARGEMENT UNITAIRE
+1. Cocher en bas à gauche p. ex. « Audio » ou « Images » (ou saisir des
+   extensions personnelles dans le champ « Extensions propres » + Entrée).
+2. Le programme recherche alors AUTOMATIQUEMENT ces types de fichiers sur
+   tout le stockage (la ligne d'état bleue en haut à droite montre la
+   progression). Le bouton « Rechercher sur le téléphone » relance la
+   recherche manuellement à tout moment.
+   Les dossiers système (Android, MIUI, cache, ...) restent MASQUÉS par
+   défaut - cocher « Afficher les dossiers système » pour les montrer.
+3. À droite apparaît la liste de tous les DOSSIERS contenant de tels
+   fichiers (avec nombre et taille). Un double-clic ouvre le dossier :
+   - fichier unique : double-clic (ou sélectionner + « Copier les fichiers
+     marqués ») -> copié immédiatement vers la destination
+   - « Copier ce dossier complètement » -> copie tout le dossier
+4. Cocher « Tous les types (défaut) » = recherche désactivée, navigateur
+   normal. « Actualiser » (en haut à droite) répète la recherche.
+5. Changer de vue : le bouton « Vue : miniatures » affiche images/fichiers
+   en grandes icônes avec aperçu (comme l'Explorateur Windows),
+   « Vue : liste » revient au tableau.
+
+MODE DE COPIE (à gauche, groupe « Mode de copie »)
+TURBO (adb pull) :
+- Cocher « Turbo (adb pull, beaucoup plus rapide) » : copie via adb au lieu
+  du lent MTP - gain de temps net avec beaucoup de/gros fichiers.
+- Prérequis : débogage USB actif + PC approuvé (confirmer une fois).
+- Fonctionne pour la mémoire INTERNE ; avec une carte SD, le programme
+  utilise automatiquement MTP.
+- Remarque : le mode Turbo rapatrie d'abord le dossier complet sur le PC
+  puis le range selon la sélection/le filtre - le dossier nécessite donc
+  temporairement de l'espace supplémentaire sur le disque.
+INCRÉMENTAL :
+- Cocher « Incrémental (neuf + modifications seulement) » : les fichiers
+  déjà présents à la destination avec le même nom ET la même taille sont
+  ignorés SANS question. Idéal pour des sauvegardes régulières : le second
+  passage ne transfère que le neuf/modifié.
+- Sans la case, le programme pose la question oui/non comme d'habitude.
+
+DOSSIER DU TÉLÉPHONE À LA DESTINATION
+Toutes les copies sont rangées dans un dossier parent au nom du téléphone,
+p. ex.  C:\Users\<vous>\Desktop\Nouveau dossier\Redmi 12 5G\...
+Les copies de plusieurs appareils restent ainsi bien séparées.
+
+CONSEILS POUR UN TÉLÉPHONE DE NOUVEAU RAPIDE
+- Après de grosses opérations de copie/suppression : redémarrer le
+  téléphone une fois.
+- Toujours garder au moins 10-15 % d'espace libre.
+- Options développeur : régler les 3 échelles d'animation sur 0,5x
+  (nettement plus fluide).
+- Désinstaller les applications inutiles ou désactiver leur démarrage
+  automatique.

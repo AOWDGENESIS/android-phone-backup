@@ -1,0 +1,13 @@
+NOTICE / Third-party attribution
+
+HandyKopie (own code) - Copyright (c) 2026 HandyKopie Project - MIT License.
+
+Android SDK Platform-Tools (adb.exe, AdbWinApi.dll, AdbWinUsbApi.dll)
+  Copyright (C) Google LLC
+  License: Apache License, Version 2.0
+  Source:  https://developer.android.com/tools/releases/platform-tools
+  The binaries are bundled UNMODIFIED for user convenience (plug & play).
+  You may delete the folder "platform-tools" and the program will ask you to
+  provide adb separately; a downloader is included in tools/.
+
+No other third-party runtime components are distributed.

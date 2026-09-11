@@ -1,0 +1,166 @@
+﻿ANLEITUNG - Handy-Kopie mit UI (Redmi 15C 5G)
+==============================================
+
+DATEIEN
+- Start_HandyKopie_UI.bat   -> Doppelklick startet das Programm (GUI)
+- HandyKopieUI.ps1          -> das eigentliche Skript (UI)
+- platform-tools\           -> adb.exe + Hilfs-DLLs sind DIREKT dabei
+  (Android SDK Platform-Tools, (c) Google; keine Separate-Installation noetig)
+  WICHTIG: Immer diese .bat benutzen (NICHT eine alte "Start_HandyKopie.bat")!
+  WICHTIG: Alles in EINEN Ordner entpacken, sonst fehlt adb.
+
+VORBEREITUNG
+1. Alle Dateien in EINEN Ordner entpacken.
+2. Handy per USB-Kabel am PC anschliessen.
+3. Handy ENTSPERREN.
+4. Am Handy in der Benachrichtigungsleiste:
+   "Laedt ueber USB" antippen -> "Dateiuebertragung / MTP" auswaehlen.
+
+START
+Doppelklick auf:  Start_HandyKopie_UI.bat
+
+BEDIENUNG
+1. Oben links wird der Speicher gewaehlt:
+   - Interner Speicher  oder  - SD-Karte / externer Speicher
+   (nicht vorhandene Speicher sind ausgegraut; "Neu laden" nach
+   Wiederverbinden des Handys klicken)
+2. Links im Ordnerbaum HAEKCHEN setzen bei allen Ordnern, die kopiert
+   werden sollen (z.B. DCIM, Download, Pictures, Documents).
+   - Ein Haekchen kopiert den Ordner inkl. aller Unterordner.
+   - Haekchen bei einem Unterordner entfernen = dieser Unterordner
+     wird ausgeschlossen.
+   - Ordner lassen sich aufklappen. Klickst du LINKS im Baum einen
+     Ordner an, zeigt das rechte Fenster sofort dessen Inhalt
+     (Dateinamen mit Groesse/Datum). Doppelklick rechts geht auch,
+     "< Hoch" bringt dich eine Ebene zurueck.
+3. Unten den ZIELORDNER eintragen oder mit "Durchsuchen..." waehlen.
+   Standard: C:\Users\aowdg\Desktop\Neuer Ordner
+4. "Kopieren starten" klicken.
+
+ABLAUF
+- Phase 1: Zielordner und Handy-Ordner werden gescannt
+  (Dateianzahl und Groesse werden live angezeigt).
+- Phase 2: Wurden DOPPELTE Dateien gefunden (gleicher Name + gleiche
+  Groesse im Ziel schon vorhanden), erscheint eine Abfrage:
+      JA   = trotzdem kopieren (vorhandene Dateien werden ueberschrieben)
+      NEIN = die doppelten Dateien werden uebersprungen
+  (Dateien mit gleichem Namen aber ANDERER Groesse werden immer
+  ueberschrieben.)
+- Phase 3: Kopieren mit Live-Fortschrittsbalken (Prozent, kopierte
+  Datenmenge, Dateizaehler, aktuelle Datei).
+- Am Ende erscheint eine Zusammenfassung (kopiert / uebersprungen).
+
+DATEI-FILTER (LINKS UNTEN)
+- Standard: "Alle Dateitypen" (alles wird kopiert).
+- Oder: Haekchen nur bei bestimmten Gruppen setzen, z.B. Bilder (jpg/png/heic),
+  Videos, Audio, Dokumente (pdf/docx), APK, Archive.
+- Eigene Endungen zusaetzlich ins kleine Textfeld (kommagetrennt, z.B. "apk, pdf").
+
+FEHLERSICHERHEIT BEIM KOPIEREN
+- Das Programm kopiert jetzt Datei fuer Datei OHNE blockierende Windows-Dialoge.
+- Schlaegt eine Datei fehl (z.B. unerlaubter Name, gesperrt), wird der Fehler
+  SOFORT in eine Textdatei geschrieben und mit der NAECHSTEN Datei weitergemacht.
+  Der Vorgang bricht NICHT ab.
+- Protokoll: %TEMP%\HandyKopie_Fehler_<Datum>.txt - wird bei Fehlern am Ende
+  automatisch in Notepad geoeffnet; Pfad steht auch im Logfenster.
+
+ABBRECHEN
+"Abbrechen" beendet den Vorgang nach der aktuellen Datei.
+
+HINWEISE / TIPPS
+- Handy waehrend des Kopierens entsperrt lassen (Bildschirm anlassen),
+  sonst kann die MTP-Verbindung abbrechen.
+- Sind sehr viele kleine Dateien doppelt, kann der "Datei fuer Datei"-
+  Modus laenger dauern als der Block-Modus.
+- Wird das Programm sehr langsam beim Aufklappen: grosse Ordner
+  (z.B. WhatsApp-Bilder) enthalten teilweise zehntausende Dateien.
+
+OPTIONAL NOCH SCHNELLER: ADB
+(MTP ist der Flaschenhals; ADB ist bei vielen kleinen Dateien schneller.)
+1. platform-tools: https://developer.android.com/tools/releases/platform-tools
+2. Handy: Einstellungen > Ueber das Telefon > 7x auf "HyperOS-Version"
+   tippen -> Entwickleroptionen -> USB-Debugging AN
+3. PowerShell im platform-tools-Ordner:
+   .\adb devices
+   $dst = "C:\Users\aowdg\Desktop\Neuer Ordner"
+   foreach ($f in @("DCIM","Download","Pictures","Documents")) {
+       Start-Process powershell -ArgumentList "-NoExit","-Command","& '$PWD\adb.exe' pull /storage/emulated/0/$f '$dst'"
+   }
+
+REINIGUNG: CACHE & DATENMUELL (gegen Einfrieren/Haengen)
+1. Im Hauptfenster links auf "Cache & Datenmuell bereinigen" klicken.
+2. "Scannen" -> die Kategorien werden mit ihrer Groesse angezeigt:
+   - Miniaturansichten (DCIM/.thumbnails u.a.)
+   - App-Caches (Android/data/*/cache)
+   - Temp-/Restordner im Hauptverzeichnis (.cache, tmp, temp, ...)
+   - Veraltete Android-Updates (Reste von System-Updates: *.ota, *.bin,
+     update*.zip in Root/Download/MIUI/.ota) - sofern vorhanden
+3. Kategorien anhaekeln und "Auswahl loeschen" -> Sicherheitsabfrage mit Ja beantworten.
+   Eigene Dateien (Fotos, Dokumente, Musik, WhatsApp-Chats) werden NIE angefasst.
+   Thumbnails/Caches werden bei Bedarf automatisch neu erzeugt.
+   Hinweis: Ab Android 11 blendet Android manche App-Cache-Ordner fuer MTP aus
+   (dann steht dort 0 MB). Dafuer gibt es den Knopf "App-Cache per adb leeren":
+   Das Programm sucht automatisch eine adb.exe (im Skript-Ordner, in PATH oder
+   in ueblichen Installationspfaden) und fuehrt "adb shell pm trim-caches 8G"
+   aus - die systemseitige, sichere Tiefenreinigung aller App-Caches.
+   Voraussetzung: USB-Debugging am Handy aktiviert (siehe ADB-Abschnitt unten).
+   adb.exe liegt bereits im Ordner platform-tools bei - keine Nachinstallation!
+   Die Kategorien zeigen jetzt neben der Groesse auch die DATEIANZAHL, damit
+   man sieht, was wirklich gefunden wurde (0 = leer oder von Android verborgen).
+
+APPS VERWALTEN / SAUBER DEINSTALLIEREN
+1. Oben in der Symbolleiste auf "Apps verwalten" klicken.
+2. "Liste laden" -> zeigt alle vom Benutzer installierten Dritt-Apps
+   (System-Apps werden bewusst nicht angezeigt).
+3. App(s) markieren und "Auswahl sauber deinstallieren":
+   - entfernt die App per adb (pm uninstall)
+   - loescht danach die Restordner Android/data/<Paket> und
+     Android/obb/<Paket> vom Handy -> wirklich SAUBER, kein Datenmuell
+4. Voraussetzung: USB-Debugging aktiv + PC vertraut (einmalig am Handy
+   bestaetigen). adb liegt im Ordner platform-tools bereits bei.
+
+DATEI-FILTER MIT SUCHE (rechts) + EINZELDOWNLOAD
+1. Links unten Haekchen bei z.B. "Audio" oder "Bilder" setzen
+   (oder eigene Endungen ins Feld "Eigene Endungen" + Enter).
+2. Das Programm durchsucht daraufhin AUTOMATISCH den ganzen Speicher
+   nach diesen Dateitypen (blaue Statuszeile rechts oben zeigt den Fortschritt).
+   Der Knopf "Handy durchsuchen" startet die Suche jederzeit manuell.
+   Systemordner (Android, MIUI, cache, ...) bleiben dabei standardmaessig
+   AUSGEBLENDET - Haekchen "Systemordner zeigen" blendet sie ein.
+3. Rechts erscheint die Liste aller ORDNER, in denen solche Dateien liegen
+   (mit Anzahl und Groesse). Doppelklick oeffnet den Ordner:
+   - einzelne Datei: Doppelklick (oder markieren + "Markierte Dateien kopieren")
+     -> wird sofort aufs Ziel kopiert
+   - "Diesen Ordner komplett kopieren" -> kopiert den ganzen Ordner
+4. "Alle Dateitypen (Standard)" anhaekeln = Suche aus, normaler Browser.
+   "Aktualisieren" (rechts oben) wiederholt die Suche.
+5. Ansicht umschalten: Knopf "Ansicht: Miniaturen" zeigt Bilder/Dateien als
+   grosse Symbole mit Vorschaubild (wie im Windows-Explorer), "Ansicht: Liste"
+   zurueck zur Tabellenansicht.
+
+KOPIER-MODUS (links, Gruppe 'Kopier-Modus')
+TURBO (adb pull):
+- Haekchen 'Turbo (adb pull, viel schneller)': kopiert ueber adb statt ueber
+  das langsame MTP - bei vielen/grossen Dateien deutlicher Zeitgewinn.
+- Voraussetzung: USB-Debugging aktiv + PC vertraut (einmalig bestaetigen).
+- Funktioniert fuer den INTERNEN Speicher; bei SD-Karte automatisch MTP.
+- Hinweis: Turbo holt den Ordner erst komplett auf den PC und raeumt dann
+  gemaess Auswahl/Filter auf - fuer den Ordner braucht es also kurzzeitig
+  zusaetzlich Platz auf der Festplatte.
+INKREMENTELL:
+- Haekchen 'Inkrementell (nur Neues + Aenderungen)': Dateien, die im Ziel
+  schon mit gleichem Namen UND gleicher Groesse liegen, werden OHNE Frage
+  uebersprungen. Ideal fuer regelmaessige Backups: Der zweite Lauf uebertraegt
+  nur noch Neues/Geaendertes.
+- Ohne Haekchen fragt das Programm bei Duplikaten wie gewohnt Ja/Nein.
+
+HANDY-ORDNER IM ZIEL
+Alle Kopien landen in einem uebergeordneten Ordner mit dem Handy-Namen,
+z.B.  C:\Users\aowdg\Desktop\Neuer Ordner\Redmi 12 5G\...
+So bleiben Kopien verschiedener Geraete sauber getrennt.
+
+TIPPS, DAMIT DAS HANDY WIEDER SCHNELL LAEUFT
+- Nach grossen Kopier-/Loesch-Aktionen: Handy einmal neu starten.
+- Immer mindestens 10-15 % des Speicherplatzes frei halten.
+- Entwickleroptionen: alle 3 Animationsskalen auf 0,5x stellen (deutlich fluessiger).
+- Nicht benoetigte Apps deinstallieren bzw. deren Autostart deaktivieren.

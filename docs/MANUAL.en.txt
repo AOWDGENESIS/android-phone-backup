@@ -1,0 +1,152 @@
+MANUAL - HandyKopie (Android phone copy tool with UI)
+=====================================================
+
+FILES
+- Start_HandyKopie_UI.bat   -> double-click starts the program (GUI)
+- HandyKopieUI.ps1          -> the actual script (UI)
+- platform-tools\           -> adb.exe + helper DLLs are INCLUDED
+  (Android SDK Platform-Tools, (c) Google; no separate installation needed)
+  IMPORTANT: always use this .bat (NOT an old "Start_HandyKopie.bat")!
+  IMPORTANT: extract everything into ONE folder, otherwise adb is missing.
+
+PREPARATION
+1. Extract all files into ONE folder.
+2. Connect the phone to the PC with the USB cable.
+3. UNLOCK the phone.
+4. On the phone, in the notification bar:
+   tap "Charging via USB" -> select "File transfer / MTP".
+
+START
+Double-click:  Start_HandyKopie_UI.bat
+
+OPERATION
+1. Top left, choose the storage:
+   - Internal storage  or  - SD card / external storage
+   (storages that do not exist are greyed out; click "Reload" after
+   reconnecting the phone)
+2. In the folder tree on the left, TICK every folder you want to copy
+   (e.g. DCIM, Download, Pictures, Documents).
+   - A tick copies the folder including all subfolders.
+   - Unticking a subfolder = this subfolder is excluded.
+   - Folders can be expanded. Clicking a folder in the LEFT tree makes the
+     right window immediately show its contents (file names with size/date).
+     Double-click on the right also works; "< Up" goes back one level.
+3. Enter the DESTINATION folder at the bottom or choose it with "Browse...".
+4. Click "Start copying".
+
+SEQUENCE
+- Phase 1: destination folder and phone folders are scanned
+  (file count and size are shown live).
+- Phase 2: if DUPLICATE files are found (same name + same size already in
+  the destination), a prompt appears:
+      YES  = copy anyway (existing files are overwritten)
+      NO   = the duplicate files are skipped
+  (files with the same name but a DIFFERENT size are always overwritten.)
+- Phase 3: copying with a live progress bar (percent, copied amount,
+  file counter, current file).
+- At the end a summary appears (copied / skipped).
+
+FILE FILTER (BOTTOM LEFT)
+- Default: "All file types" (everything is copied).
+- Or: tick only certain groups, e.g. Images (jpg/png/heic), Videos, Audio,
+  Documents (pdf/docx), APK, Archives.
+- Additional own extensions in the small text field (comma-separated,
+  e.g. "apk, pdf").
+
+FAULT TOLERANCE WHILE COPYING
+- The program now copies file by file WITHOUT blocking Windows dialogs.
+- If a file fails (e.g. invalid name, locked), the error is written to a
+  text file IMMEDIATELY and the program continues with the NEXT file.
+  The run is NOT aborted.
+- Log: %TEMP%\HandyKopie_Fehler_<date>.txt - if there were errors it is
+  opened automatically in Notepad at the end; the path is also in the log.
+
+CANCEL
+"Cancel" stops the run after the current file.
+
+NOTES / TIPS
+- Keep the phone unlocked while copying (keep the screen on), otherwise the
+  MTP connection may drop.
+- If the program is very slow when expanding: large folders (e.g. WhatsApp
+  images) can contain tens of thousands of files.
+
+CLEANUP: CACHES & JUNK (against freezing/hanging)
+1. In the main window, click "Clean up cache & junk" on the left.
+2. "Scan" -> the categories are shown with their size:
+   - Thumbnails (DCIM/.thumbnails etc.)
+   - App caches (Android/data/*/cache)
+   - Temp/leftover folders in the root (.cache, tmp, temp, ...)
+   - Outdated Android updates (leftovers of system updates: *.ota, *.bin,
+     update*.zip in root/Download/MIUI/.ota) - if present
+3. Tick categories and "Delete selection" -> confirm the safety prompt
+   with Yes.
+   Your own files (photos, documents, music, WhatsApp chats) are NEVER
+   touched. Thumbnails/caches are recreated automatically when needed.
+   Note: from Android 11, Android hides some app cache folders from MTP
+   (then 0 MB is shown). For this there is the button
+   "Empty app cache via adb": the program automatically finds an adb.exe
+   (script folder, PATH or common install paths) and runs
+   "adb shell pm trim-caches 8G" - the safe, system-side deep clean of all
+   app caches.
+   Prerequisite: USB debugging enabled on the phone.
+   adb.exe is already bundled in the platform-tools folder - no extra
+   installation! The categories now show the FILE COUNT next to the size so
+   you can see what was really found (0 = empty or hidden by Android).
+
+MANAGE APPS / CLEAN UNINSTALL
+1. Click "Manage apps" in the top toolbar.
+2. "Load list" -> shows all third-party apps installed by the user
+   (system apps are deliberately not shown).
+3. Select app(s) and "Uninstall selection cleanly":
+   - removes the app via adb (pm uninstall)
+   - then deletes the leftover folders Android/data/<package> and
+     Android/obb/<package> from the phone -> truly CLEAN, no junk
+4. Prerequisite: USB debugging enabled + PC trusted (confirm once on the
+   phone). adb is already bundled in the platform-tools folder.
+
+FILE FILTER WITH SEARCH (right side) + SINGLE DOWNLOAD
+1. Tick e.g. "Audio" or "Images" at the bottom left (or enter own
+   extensions into the "Own extensions" field + Enter).
+2. The program then AUTOMATICALLY searches the whole storage for these file
+   types (the blue status line at the top right shows progress).
+   The button "Search phone" starts the search manually at any time.
+   System folders (Android, MIUI, cache, ...) stay HIDDEN by default -
+   tick "Show system folders" to show them.
+3. On the right, a list of all FOLDERS containing such files appears
+   (with count and size). Double-click opens the folder:
+   - single file: double-click (or select + "Copy marked files")
+     -> copied to the destination immediately
+   - "Copy this folder completely" -> copies the whole folder
+4. Tick "All file types (default)" = search off, normal browser.
+   "Refresh" (top right) repeats the search.
+5. Switch view: the button "View: thumbnails" shows images/files as large
+   icons with preview (like Windows Explorer), "View: list" returns to the
+   table view.
+
+COPY MODE (left, group 'Copy mode')
+TURBO (adb pull):
+- Tick 'Turbo (adb pull, much faster)': copies via adb instead of the slow
+  MTP - a clear time saving with many/large files.
+- Prerequisite: USB debugging enabled + PC trusted (confirm once).
+- Works for the INTERNAL storage; with an SD card the program automatically
+  uses MTP.
+- Note: Turbo first pulls the folder completely to the PC and then tidies
+  it up according to selection/filter - so the folder temporarily needs
+  additional space on your hard disk.
+INCREMENTAL:
+- Tick 'Incremental (only new + changes)': files that already exist in the
+  destination with the same name AND same size are skipped WITHOUT asking.
+  Ideal for regular backups: the second run only transfers new/changed
+  files.
+- Without the tick, the program asks yes/no for duplicates as usual.
+
+PHONE FOLDER AT THE DESTINATION
+All copies are stored in a parent folder named after the phone,
+e.g.  C:\Users\<you>\Desktop\New folder\Redmi 12 5G\...
+This keeps copies of different devices cleanly separated.
+
+TIPS TO MAKE THE PHONE FAST AGAIN
+- After large copy/delete actions: restart the phone once.
+- Always keep at least 10-15 % of the storage free.
+- Developer options: set all 3 animation scales to 0.5x (much smoother).
+- Uninstall apps you do not need or disable their autostart.

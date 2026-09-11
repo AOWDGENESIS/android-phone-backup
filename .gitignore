@@ -1,0 +1,12 @@
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+*.lnk
+
+# PowerShell / tooling caches
+__pycache__/
+*.log
+
+# Local user config created by the app at runtime (never part of the repo)
+# (the app stores its config in %APPDATA%\HandyKopie, not in the repo)
