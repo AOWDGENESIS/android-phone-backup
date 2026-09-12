@@ -3,6 +3,21 @@
 All notable changes to HandyKopie are documented here.
 Format based on "Keep a Changelog". Dates in YYYY-MM-DD.
 
+## [2.1.3] - 2026-09-12
+### Fixed
+- Search ("browse phone") always died with a cryptic NULL error: the
+  search worker code uses `$fs`, but the launcher was injecting the shared
+  object as `fsync`. The worker now receives `fs` - search works.
+- Turbo mode nested pulled folders doubly (e.g. `DCIM\DCIM\Camera`):
+  `adb pull` places the source folder inside the target. Pull now goes to the
+  parent directory; the structure matches the MTP copy.
+
+### Verified
+- New end-to-end harness (Linux): real worker script blocks in real
+  runspaces, MTP simulated via a filesystem shell, adb as a fake
+  executable. 30/30 assertions pass: MTP copy + duplicate dialog
+  (yes/no), EXIF sort, turbo, single-file copy, filter search, app manager.
+
 ## [2.1.2] - 2026-09-11
 ### Fixed
 - Copy worker crashed with "Sanitize-Seg not recognized": the helper was

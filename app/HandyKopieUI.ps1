@@ -247,7 +247,7 @@ $workerScript = {
                 $relPosix = ($s.Path -join '/')
                 $src = '/storage/emulated/0/' + $relPosix
                 $tempTop = Join-Path $tempRoot $s.Name
-                [void][System.IO.Directory]::CreateDirectory($tempTop)
+                [void][System.IO.Directory]::CreateDirectory($tempRoot)
                 $sync.Phase = 'Scan'
                 $sync.ScanStatus = 'adb pull ' + $relPosix
                 WLog ('Turbo: adb pull ' + $src + ' ...')
@@ -560,7 +560,7 @@ function Start-Search($extsOverride) {
     $rs = [runspacefactory]::CreateRunspace()
     $rs.ApartmentState = 'STA'
     $rs.Open()
-    $rs.SessionStateProxy.SetVariable('fsync', $fsync)
+    $rs.SessionStateProxy.SetVariable('fs', $fsync)
     $ps = [powershell]::Create()
     $ps.Runspace = $rs
     [void]$ps.AddScript($searchScript.ToString())
